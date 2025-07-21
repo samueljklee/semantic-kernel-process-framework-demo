@@ -1,6 +1,7 @@
 ﻿using Microsoft.SemanticKernel;
 using SKProcessDemo.Processes.DocumentationProcessSteps;
 using SKProcessDemo.Processes.UserValidationStep;
+using SKProcessDemo.Processes.GitHubIssueProcessSteps;
 // ... (and ensure to include the namespace of your step classes)
 
 #pragma warning disable SKEXP0080
@@ -71,6 +72,12 @@ class Program
                 Console.WriteLine($"\nStarting {selectedProcess.Name} for: {inputData}");
                 Console.WriteLine("Processing...\n");
 
+                // Reset progress tracker for new process
+                if (selectedProcess.Name == "GitHub Issue Creator")
+                {
+                    SKProcessDemo.Processes.GitHubIssueProcessSteps.ProcessProgressTracker.Reset();
+                }
+
                 // Build and run the selected process
                 KernelProcess process = selectedProcess.BuildProcess();
                 await process.StartAsync(kernel, new KernelProcessEvent { Id = selectedProcess.StartEventId, Data = inputData }).ConfigureAwait(false);
@@ -137,6 +144,14 @@ class Program
                 DefaultInput = "Enterprise Product",
                 StartEventId = "StartDocumentationWithHitlProcess", 
                 BuildProcess = () => BuildDocumentationWithHitlProcess()
+            },
+            new ProcessDefinition
+            {
+                Name = "GitHub Issue Creator",
+                Description = "Create GitHub issues with AI enhancement and human approval",
+                DefaultInput = "owner/repo|Bug title|Bug description here",
+                StartEventId = "StartGitHubIssueProcess",
+                BuildProcess = () => BuildGitHubIssueProcess()
             }
         };
     }
@@ -184,6 +199,57 @@ class Program
         // publishDocumentationStep next step.
 
         userInputStep.OnEvent(UserValidationStep.OutputEvents.Exit).StopProcess();
+
+        return builder.Build();
+    }
+
+    private static KernelProcess BuildGitHubIssueProcess()
+    {
+        ProcessBuilder builder = new("GitHubIssueProcess");
+        var validateStep = builder.AddStepFromType<ValidateIssueInputStep>();
+        var enhanceStep = builder.AddStepFromType<EnhanceIssueStep>();
+        var reviewStep = builder.AddStepFromType<UserReviewStep>();
+        var feedbackStep = builder.AddStepFromType<ProcessUserFeedbackStep>();
+        var createStep = builder.AddStepFromType<CreateGitHubIssueStep>();
+        var confirmationStep = builder.AddStepFromType<IssueConfirmationStep>();
+
+        // Process flow: Input -> Validate -> Enhance -> Review -> (Feedback Loop) -> Create -> Confirm
+        builder.OnInputEvent("StartGitHubIssueProcess").SendEventTo(new ProcessFunctionTargetBuilder(validateStep));
+        
+        // On successful validation, enhance the issue
+        validateStep.OnEvent(ValidateIssueInputStep.OutputEvents.InputValidated)
+            .SendEventTo(new ProcessFunctionTargetBuilder(enhanceStep, parameterName: "issueInputJson"));
+        
+        // On validation failure, show error and stop
+        validateStep.OnEvent(ValidateIssueInputStep.OutputEvents.ValidationFailed)
+            .SendEventTo(new ProcessFunctionTargetBuilder(confirmationStep, functionName: IssueConfirmationStep.ProcessStepFunctions.ShowError, parameterName: "error"));
+        
+        // After enhancement, go to review step
+        enhanceStep.OnEvent(EnhanceIssueStep.OutputEvents.IssueEnhanced)
+            .SendEventTo(new ProcessFunctionTargetBuilder(reviewStep, parameterName: "enhancedIssueJson"));
+        
+        // On approval, create the issue
+        reviewStep.OnEvent(UserReviewStep.OutputEvents.ApprovalReceived)
+            .SendEventTo(new ProcessFunctionTargetBuilder(createStep, parameterName: "enhancedIssueJson"));
+        
+        // On modification request, process feedback with AI
+        reviewStep.OnEvent(UserReviewStep.OutputEvents.ModificationRequested)
+            .SendEventTo(new ProcessFunctionTargetBuilder(feedbackStep, parameterName: "modificationRequestJson"));
+        
+        // After processing feedback, go back to review (creates a feedback loop)
+        feedbackStep.OnEvent(ProcessUserFeedbackStep.OutputEvents.IssueModified)
+            .SendEventTo(new ProcessFunctionTargetBuilder(reviewStep, parameterName: "enhancedIssueJson"));
+        
+        // On rejection, show cancellation message and stop
+        reviewStep.OnEvent(UserReviewStep.OutputEvents.RejectionReceived).StopProcess();
+        
+        // On successful creation, show confirmation
+        createStep.OnEvent(CreateGitHubIssueStep.OutputEvents.IssueCreated)
+            .SendEventTo(new ProcessFunctionTargetBuilder(confirmationStep, functionName: IssueConfirmationStep.ProcessStepFunctions.ShowConfirmation, parameterName: "createdIssueJson"));
+        
+        // On creation failure, show error
+        createStep.OnEvent(CreateGitHubIssueStep.OutputEvents.CreationFailed)
+            .SendEventTo(new ProcessFunctionTargetBuilder(confirmationStep, functionName: IssueConfirmationStep.ProcessStepFunctions.ShowError, parameterName: "error"));
 
         return builder.Build();
     }
