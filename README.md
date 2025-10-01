@@ -144,6 +144,7 @@ Available Processes:
   2. Generates documentation using AI
   3. Publishes documentation automatically
 - **Output**: Complete documentation without human intervention
+- **📖 Detailed Guide**: [Basic Documentation Process Example](docs/examples/basic-documentation-process.md)
 
 #### 3. Documentation Process (Human-in-the-Loop)
 - **Input**: Product name (e.g., "Medical Device")
@@ -153,6 +154,7 @@ Available Processes:
   3. **Prompts for human review and feedback**
   4. Incorporates feedback and publishes final documentation
 - **Interaction**: You'll be prompted to review and provide feedback during the process
+- **🚀 Detailed Guide**: [Advanced Human-in-the-Loop Example](docs/examples/advanced-human-in-loop.md)
 
 ## Example Usage
 
@@ -177,13 +179,23 @@ Available Processes:
 ## Project Structure
 
 ```
-SKProcessDemo/
+semantic-kernel-process-framework-demo/
 ├── Program.cs                              # Main application entry point
 ├── SKProcessDemo.csproj                    # Project configuration
 ├── Processes/
 │   ├── DocumentationProcessSteps.cs       # Documentation generation steps
-│   └── UserValidationSteps.cs            # Human-in-the-loop validation steps
-└── README.md                              # This file
+│   ├── UserValidationSteps.cs            # Human-in-the-loop validation steps
+│   └── GitHubIssueProcessSteps.cs        # GitHub issue creation steps
+├── docs/
+│   ├── README.md                          # Documentation index
+│   ├── examples/                          # Step-by-step walkthroughs
+│   │   ├── basic-documentation-process.md
+│   │   └── advanced-human-in-loop.md
+│   └── diagrams/                          # Architecture documentation
+│       └── process-architecture.md
+├── README.md                              # Main documentation (this file)
+├── README_GitHub_Process.md               # GitHub process documentation
+└── CONTRIBUTING.md                        # Contribution guidelines
 ```
 
 ## Key Components
@@ -381,6 +393,27 @@ If you encounter issues not listed above:
 
 - Modify the `SystemPrompt` in `GenerateDocumentationStep` to change AI behavior
 - Adjust model selection in the kernel builder configuration
+
+## Additional Resources
+
+### 📚 Documentation
+
+- **[Documentation Index](docs/README.md)** - Complete documentation navigation
+- **[Getting Started Guide](#getting-started)** - Quick 5-minute setup
+- **[Basic Example Walkthrough](docs/examples/basic-documentation-process.md)** - Step-by-step basic process guide
+- **[Advanced Example Walkthrough](docs/examples/advanced-human-in-loop.md)** - Human-in-the-loop detailed guide
+- **[Process Architecture Guide](docs/diagrams/process-architecture.md)** - System design and architecture patterns
+
+### 🔧 Development
+
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to this project
+- **[GitHub Process Documentation](README_GitHub_Process.md)** - Advanced GitHub integration workflow
+
+### 🌐 External Resources
+
+- [Microsoft Semantic Kernel Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
+- [Process Framework Overview](https://learn.microsoft.com/en-us/semantic-kernel/concepts/process-framework)
+- [.NET 9.0 Download](https://dotnet.microsoft.com/download/dotnet/9.0)
 
 ## License
 
